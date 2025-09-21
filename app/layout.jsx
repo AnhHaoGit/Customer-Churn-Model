@@ -1,4 +1,6 @@
 import "./globals.css";
+import { ToastContainer } from "react-toastify";
+
 
 
 export const metadata = {
@@ -10,6 +12,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className="font-sans antialiased">
         {children}
+        <ToastContainer position="top-center" autoClose={3000} />
       </body>
     </html>
   );

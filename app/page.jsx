@@ -31,11 +31,11 @@ export default function Home() {
   return (
     <>
       <main className="flex flex-col items-center gap-10">
-        <p className="text-4xl font-bold mt-20">
+        <p className="text-4xl font-bold mt-10">
           Predicting Customer Churn Model AI
         </p>
         <div>
-          <label className="flex items-center gap-2 bg-black text-white rounded-full py-3 sm:py-4 px-8 sm:px-16 md:px-20 shadow-2xl mt-6 sm:mt-10 font-bold justify-center hover:bg-violet transition-colors cursor-pointer text-sm sm:text-base">
+          <label className="flex items-center gap-2 bg-indigo-700 hover:bg-indigo-600 text-white rounded-full py-3 px-8 shadow-2xl font-bold justify-center hover:bg-violet transition-colors cursor-pointer text-sm">
             <input
               type="file"
               className="hidden"

@@ -72,6 +72,8 @@ async def upload_csv(file: UploadFile = File(...)):
 
 
 class CustomerInput(BaseModel):
+    userName: str
+    email: str
     tenure: float
     monthlyCharges: float
     totalCharges: float
@@ -163,7 +165,5 @@ async def single_customer(customer: CustomerInput):
         "churn": pred_label,
         "churn_probability": round(float(pred_prob), 4)
     }
-    for col in columns_order:
-        result[col] = values_map[col]
 
     return result

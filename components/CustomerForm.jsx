@@ -1,16 +1,13 @@
 "use client";
 
 import React from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
+import validateUserInfo from "@/lib/validateUserInfo";
+import InputField from "./InputField";
+import SelectBox from "./SelectBox";
+import CheckBox from "./CheckBox";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardHeader,
@@ -19,10 +16,27 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 
+const serviceLabels = {
+  seniorCitizen: "Senior Citizen",
+  partner: "Partner",
+  dependents: "Dependents",
+  phoneService: "Phone Service",
+  multipleLines: "Multiple Lines",
+  onlineSecurity: "Online Security",
+  onlineBackup: "Online Backup",
+  deviceProtection: "Device Protection",
+  techSupport: "Tech Support",
+  streamingTv: "Streaming TV",
+  streamingMovies: "Streaming Movies",
+  paperlessBilling: "Paperless Billing",
+};
+
 const defaultValues = {
+  userName: "",
+  email: "",
   tenure: 0,
-  monthlyCharges: 0,
-  totalCharges: 0,
+  monthlyCharges: 19.0,
+  totalCharges: 19.0,
   gender: "female",
   internetService: "dsl",
   contract: "monthToMonth",
@@ -42,12 +56,16 @@ const defaultValues = {
 };
 
 export default function CustomerForm() {
+  const router = useRouter();
   const { register, handleSubmit, setValue, control } = useForm({
     defaultValues,
   });
 
   const onSubmit = async (data) => {
-    console.log("Form data:", data);
+    if (!validateUserInfo(data.userName, data.email)) {
+      return;
+    }
+
     try {
       const res = await fetch("/api/process", {
         method: "POST",
@@ -59,43 +77,63 @@ export default function CustomerForm() {
 
       const responseData = await res.json();
       console.log("Response:", responseData);
+      const result = [{ ...responseData, ...data }];
+      localStorage.setItem("predictionResults", JSON.stringify(result));
+      router.push("/result");
     } catch (error) {
       console.error("Error submitting form:", error);
     }
   };
 
   return (
-    <Card className="max-w-3xl mx-auto p-8 bg-white shadow-md">
+    <Card className="mx-auto p-8 bg-white shadow-md">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-semibold text-indigo-700">
+        <CardTitle className="text-2xl font-semibold text-black">
           Customer Information
         </CardTitle>
       </CardHeader>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-        <CardContent className="space-y-15">
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-10">
+        <CardContent className="flex justify-between gap-10">
           {/* Basic Inputs */}
           <section>
             <h2 className="text-lg font-semibold mb-4 text-indigo-700">
               Basic Inputs
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* ✨ Thêm hai trường mới */}
+              <InputField
+                label="Name"
+                type="text"
+                register={register("userName")}
+                placeholder="Enter your name"
+              />
+              <InputField
+                label="Email"
+                type="email"
+                register={register("email")}
+                placeholder="Enter your email"
+              />
+
               <InputField
                 label="Tenure (months)"
                 type="number"
                 register={register("tenure", { valueAsNumber: true })}
+                min="0"
               />
               <InputField
                 label="Monthly Charges"
                 type="number"
                 step="0.01"
                 register={register("monthlyCharges", { valueAsNumber: true })}
+                min="19.0"
               />
               <InputField
                 label="Total Charges"
                 type="number"
                 step="0.01"
                 register={register("totalCharges", { valueAsNumber: true })}
+                min="19.0"
               />
             </div>
           </section>
@@ -170,24 +208,11 @@ export default function CustomerForm() {
               Services
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                "seniorCitizen",
-                "partner",
-                "dependents",
-                "phoneService",
-                "multipleLines",
-                "onlineSecurity",
-                "onlineBackup",
-                "deviceProtection",
-                "techSupport",
-                "streamingTv",
-                "streamingMovies",
-                "paperlessBilling",
-              ].map((name) => (
+              {Object.keys(serviceLabels).map((name) => (
                 <CheckBox
                   key={name}
-                  label={name}
-                  name={name}
+                  label={serviceLabels[name]} // nhãn hiển thị đẹp
+                  name={name} // giữ key camelCase để submit
                   control={control}
                 />
               ))}
@@ -198,7 +223,7 @@ export default function CustomerForm() {
         <CardFooter className="flex justify-center">
           <Button
             type="submit"
-            className="px-15 py-3 rounded-3xl bg-indigo-700 hover:bg-indigo-600 text-lg text-white"
+            className="px-15 py-3 rounded-3xl bg-indigo-700 hover:bg-indigo-600 text-sm text-white"
           >
             Submit
           </Button>
@@ -207,55 +232,3 @@ export default function CustomerForm() {
     </Card>
   );
 }
-
-// Input component
-const InputField = ({ label, type, step, register }) => (
-  <div>
-    <label className="block mb-2 font-medium">{label}</label>
-    <Input
-      type={type}
-      step={step}
-      min={0}
-      {...register}
-      className="bg-gray-100 hover:bg-gray-200 focus:ring-2 focus:ring-indigo-400"
-    />
-  </div>
-);
-
-const SelectBox = ({ label, defaultValue, setValue, options }) => (
-  <div>
-    <label className="block mb-2 font-medium">{label}</label>
-    <Select
-      defaultValue={defaultValue.value}
-      onValueChange={(v) => setValue(v)}
-    >
-      <SelectTrigger className="bg-gray-100 hover:bg-gray-200 focus:ring-2 focus:ring-indigo-400">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent className="bg-gray-50">
-        {options.map((opt) => (
-          <SelectItem key={opt.value} value={opt.value}>
-            {opt.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  </div>
-);
-
-const CheckBox = ({ label, name, control }) => (
-  <Controller
-    name={name}
-    control={control}
-    render={({ field: { value, onChange } }) => (
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          checked={value === 1}
-          onChange={(e) => onChange(e.target.checked ? 1 : 0)}
-        />
-        <label className="block mb-2 font-medium">{label}</label>
-      </div>
-    )}
-  />
-);
