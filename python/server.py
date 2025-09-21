@@ -1,14 +1,10 @@
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
-import tensorflow as tf
 from io import BytesIO
 from keras.models import load_model
 import numpy as np
 from pydantic import BaseModel
-from sklearn.preprocessing import MinMaxScaler
-import joblib
-
 
 app = FastAPI()
 
@@ -20,14 +16,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load model
-
 
 def load_my_model():
     return load_model("customer_churn_model.h5")
 
 
 model = load_my_model()
+
+TENURE_MIN, TENURE_MAX = 0.0, 72.0
+MONTHLY_MIN, MONTHLY_MAX = 19.0, 116.0
+TOTAL_MIN, TOTAL_MAX = 19.0, 8405.0
 
 
 @app.post("/upload-csv")
@@ -48,23 +46,25 @@ async def upload_csv(file: UploadFile = File(...)):
         "PaymentMethod_Electronic check", "PaymentMethod_Mailed check"
     ]
 
-    # Lấy dữ liệu đầu vào
-    X = df[feature_cols]
+    X = df[feature_cols].copy()
+
+    X["tenure"] = (X["tenure"] - TENURE_MIN) / (TENURE_MAX - TENURE_MIN)
+    X["MonthlyCharges"] = (X["MonthlyCharges"] -
+                           MONTHLY_MIN) / (MONTHLY_MAX - MONTHLY_MIN)
+    X["TotalCharges"] = (X["TotalCharges"] - TOTAL_MIN) / \
+        (TOTAL_MAX - TOTAL_MIN)
 
     # Dự đoán xác suất churn
-    probs = model.predict(X)        # dạng mảng xác suất (0–1)
+    probs = model.predict(X)
     probs = probs.flatten() if isinstance(probs, np.ndarray) else probs
 
-    # Gán churn True/False
     churn_flags = [bool(p > 0.5) for p in probs]
 
-    # Gộp kết quả vào DataFrame mới
     result_df = df.copy()
     result_df["id"] = range(1, len(df) + 1)
     result_df["churn"] = churn_flags
     result_df["churn_probability"] = probs
 
-    # Chọn cột theo yêu cầu: id + 26 trường gốc + churn + churn_probability
     output_cols = ["id"] + feature_cols + ["churn", "churn_probability"]
     output = result_df[output_cols].to_dict(orient="records")
 
@@ -114,10 +114,6 @@ async def single_customer(customer: CustomerInput):
         "PaymentMethod_Bank transfer (automatic)", "PaymentMethod_Credit card (automatic)",
         "PaymentMethod_Electronic check", "PaymentMethod_Mailed check"
     ]
-
-    TENURE_MIN, TENURE_MAX = 0.0, 72.0
-    MONTHLY_MIN, MONTHLY_MAX = 19.0, 116.0
-    TOTAL_MIN, TOTAL_MAX = 19.0, 8405.0
 
     tenure_scaled = (customer.tenure - TENURE_MIN) / (TENURE_MAX - TENURE_MIN)
     monthly_scaled = (customer.monthlyCharges - MONTHLY_MIN) / \

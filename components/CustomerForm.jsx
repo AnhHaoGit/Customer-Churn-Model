@@ -97,7 +97,7 @@ export default function CustomerForm() {
         <CardContent className="flex justify-between gap-10">
           {/* Basic Inputs */}
           <section>
-            <h2 className="text-lg font-semibold mb-4 text-indigo-700">
+            <h2 className="text-lg font-semibold mb-4 iris">
               Basic Inputs
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -140,7 +140,7 @@ export default function CustomerForm() {
 
           {/* Options */}
           <section>
-            <h2 className="text-lg font-semibold mb-4 text-indigo-700">
+            <h2 className="text-lg font-semibold mb-4 iris">
               Options
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -204,7 +204,7 @@ export default function CustomerForm() {
 
           {/* Services */}
           <section>
-            <h2 className="text-lg font-semibold mb-4 text-indigo-700">
+            <h2 className="text-lg font-semibold mb-4 iris">
               Services
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -223,7 +223,7 @@ export default function CustomerForm() {
         <CardFooter className="flex justify-center">
           <Button
             type="submit"
-            className="px-15 py-3 rounded-3xl bg-indigo-700 hover:bg-indigo-600 text-sm text-white"
+            className="px-15 py-3 rounded-3xl bg-iris hover:bg-violet text-sm text-white"
           >
             Submit
           </Button>
