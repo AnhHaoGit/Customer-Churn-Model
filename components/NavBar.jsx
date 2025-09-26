@@ -1,9 +1,11 @@
+"use client";
+
 import React, { useState } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { useSession } from "next-auth/react";
 
-const LandingPageNavbar = () => {
+const Navbar = () => {
   const { data: session } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -17,14 +19,19 @@ const LandingPageNavbar = () => {
       <div className="flex justify-between items-center px-4 sm:px-6 lg:px-8 py-4">
         {/* Left side: Logo + links */}
         <div className="flex items-center gap-6">
-
           {/* Desktop links */}
           <div className="hidden md:flex items-center gap-6">
             {session ? (
               <>
-                <button onClick={handleSignout} className="hover:text-gray-600">
-                  Logout
-                </button>
+                <div className="flex gap-4">
+                  <button
+                    onClick={handleSignout}
+                    className="hover:text-gray-600"
+                  >
+                    Logout
+                  </button>
+                  <Link href='/history'>History</Link>
+                </div>
               </>
             ) : (
               <>
@@ -98,12 +105,16 @@ const LandingPageNavbar = () => {
         <div className="flex flex-col gap-4 px-6 py-6">
           {session ? (
             <>
-              <button
-                onClick={handleSignout}
-                className="hover:text-gray-600 text-left"
-              >
-                Logout
-              </button>
+              <div className="flex flex-col gap-4 items-center">
+                <button
+                  onClick={handleSignout}
+                  className="hover:text-gray-600 text-left"
+                >
+                  Logout
+                </button>
+                <Link href="/history">History</Link>
+              </div>
+
               <Link
                 href="/main"
                 className="bg-black px-5 py-2 text-white rounded-3xl hover:bg-gray-800 transition-colors cursor-pointer text-center"
@@ -127,4 +138,4 @@ const LandingPageNavbar = () => {
   );
 };
 
-export default LandingPageNavbar;
+export default Navbar;

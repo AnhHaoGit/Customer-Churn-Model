@@ -1,16 +1,22 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 
 const Page = () => {
   const [results, setResults] = useState(null);
+  const { uploadId } = useParams();
 
   useEffect(() => {
-    const data = JSON.parse(
-      localStorage.getItem("predictionResults") || "null"
+    const data = JSON.parse(localStorage.getItem("data") || null);
+    const upload = data.find(
+      (upload) => String(upload._id) === String(uploadId)
     );
-    if (data) setResults(data);
+    if (upload) setResults(upload.data);
   }, []);
+
+  console.log(results)
 
   return (
     <main className="flex flex-col items-center gap-10">
@@ -21,7 +27,7 @@ const Page = () => {
 
       <div>
         {/* ==== Header ==== */}
-        <div className="grid grid-cols-6 gap-4 font-bold border-b-2 pb-2 w-[1200px]">
+        <div className="grid grid-cols-[1fr_2.5fr_1fr_1fr_1fr_1fr] gap-4 font-bold border-b-2 pb-2 w-[1350px]">
           <p>User Name</p>
           <p>Email</p>
           <p>Customer ID</p>
@@ -31,12 +37,13 @@ const Page = () => {
         </div>
 
         {/* ==== Rows ==== */}
-        <div className="max-h-[600px] overflow-y-auto w-[1200px]">
+        <div className="max-h-[600px] overflow-y-auto w-[1350px]">
           {results ? (
             results.map((item, index) => (
-              <div
+              <Link
                 key={index}
-                className="grid grid-cols-6 gap-4 border-b py-4 items-center"
+                className="grid grid-cols-[1fr_2.5fr_1fr_1fr_1fr_1fr] gap-4 border-b py-4 items-center hover:bg-gray-200"
+                href={`/profile/${uploadId}/${item.id}`}
               >
                 <p>{item.userName}</p>
                 <p>{item.email}</p>
@@ -48,16 +55,14 @@ const Page = () => {
                 )}
                 {item.churn ? (
                   <p className="text-indigo-600 font-semibold">
-                    {(item.churn_probability * 100).toFixed(2)}%
+                    {(item.churnProbability * 100).toFixed(2)}%
                   </p>
                 ) : (
-                  <p>{(item.churn_probability * 100).toFixed(2)}%</p>
+                  <p>{(item.churnProbability * 100).toFixed(2)}%</p>
                 )}
 
                 {/* Nút gửi email */}
-                <button
-                  className="flex items-center justify-center gap-1 bg-indigo-700 text-white px-3 py-2 text-sm rounded hover:bg-indigo-800 transition"
-                >
+                <button className="flex items-center justify-center gap-1 bg-indigo-700 text-white px-3 py-2 text-sm rounded hover:bg-indigo-800 transition">
                   Send email
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -74,7 +79,7 @@ const Page = () => {
                     />
                   </svg>
                 </button>
-              </div>
+              </Link>
             ))
           ) : (
             <p>No results available. Please upload a CSV file first.</p>

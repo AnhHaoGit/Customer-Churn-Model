@@ -1,7 +1,19 @@
 import { NextResponse } from "next/server";
+import { MongoClient, ObjectId } from "mongodb";
+
+const client = new MongoClient(process.env.MONGODB_URI);
+let db;
+
+async function connectDB() {
+  if (!db) {
+    await client.connect();
+    db = client.db(process.env.MONGODB_DB_NAME || "customer_churn_db");
+  }
+  return db;
+}
 
 export async function POST(req) {
-  const { data } = await req.json();
+  const { data, userId } = await req.json();
 
   const formattedData = formatData(data);
 
@@ -14,8 +26,22 @@ export async function POST(req) {
       },
     });
 
-    const data = await res.json();
-    return NextResponse.json(data);
+    const result = await res.json();
+
+    data["churn"] = result["churn"];
+    data["churnProbability"] = result["churnProbability"];
+
+    const db = await connectDB();
+
+    const upload = await db
+      .collection("upload")
+      .insertOne({ userId: new ObjectId(userId), data: [data] });
+
+    return NextResponse.json({
+      ...result,
+      uploadId: upload.insertedId,
+      userId,
+    });
   } catch (err) {
     console.error("Error uploading CSV:", err);
   }
@@ -34,8 +60,6 @@ const formatData = (data) => {
 
   // gender
   newData.gender = newData.gender === "Male" ? 1 : 0;
-
-  
 
   // contract
   Object.assign(

@@ -8,6 +8,10 @@ import InputField from "./InputField";
 import SelectBox from "./SelectBox";
 import CheckBox from "./CheckBox";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useEffect } from "react";
+import { toast } from "react-toastify";
+
 import {
   Card,
   CardHeader,
@@ -15,6 +19,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
+import updateData from "@/lib/local_storage_handlers/updateData";
 
 const serviceLabels = {
   seniorCitizen: "Senior Citizen",
@@ -57,14 +62,32 @@ const defaultValues = {
 
 export default function CustomerForm() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const { register, handleSubmit, setValue, control } = useForm({
     defaultValues,
   });
 
+  useEffect(() => {
+    if (
+      status === "unauthenticated" ||
+      (status === "authenticated" && !session?.user?.id)
+    ) {
+      toast.error("Log in to use the app!");
+      router.push("/login");
+    }
+  }, [status, session, router]);
+
   const onSubmit = async (data) => {
+    if (status !== "authenticated" || !session?.user?.id) {
+      toast.error("Log in to use the model!");
+      router.push("/login");
+      return;
+    }
     if (!validateUserInfo(data.userName, data.email)) {
       return;
     }
+
+    const userId = session.user.id;
 
     try {
       const res = await fetch("/api/process", {
@@ -72,14 +95,23 @@ export default function CustomerForm() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ data }),
+        body: JSON.stringify({ data, userId }),
       });
 
       const responseData = await res.json();
-      console.log("Response:", responseData);
-      const result = [{ ...responseData, ...data }];
-      localStorage.setItem("predictionResults", JSON.stringify(result));
-      router.push("/result");
+      updateData({
+        _id: responseData.uploadId,
+        userId: responseData.userId,
+        data: [
+          {
+            ...data,
+            id: responseData.id,
+            churn: responseData.churn,
+            churnProbability: responseData.churnProbability,
+          },
+        ],
+      });
+      router.push(`/result/${responseData.uploadId}`);
     } catch (error) {
       console.error("Error submitting form:", error);
     }
@@ -97,9 +129,7 @@ export default function CustomerForm() {
         <CardContent className="flex justify-between gap-10">
           {/* Basic Inputs */}
           <section>
-            <h2 className="text-lg font-semibold mb-4 iris">
-              Basic Inputs
-            </h2>
+            <h2 className="text-lg font-semibold mb-4 iris">Basic Inputs</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* ✨ Thêm hai trường mới */}
               <InputField
@@ -140,9 +170,7 @@ export default function CustomerForm() {
 
           {/* Options */}
           <section>
-            <h2 className="text-lg font-semibold mb-4 iris">
-              Options
-            </h2>
+            <h2 className="text-lg font-semibold mb-4 iris">Options</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <SelectBox
                 label="Gender"
@@ -204,9 +232,7 @@ export default function CustomerForm() {
 
           {/* Services */}
           <section>
-            <h2 className="text-lg font-semibold mb-4 iris">
-              Services
-            </h2>
+            <h2 className="text-lg font-semibold mb-4 iris">Services</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.keys(serviceLabels).map((name) => (
                 <CheckBox

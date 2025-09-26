@@ -33,42 +33,71 @@ async def upload_csv(file: UploadFile = File(...)):
     contents = await file.read()
     df = pd.read_csv(BytesIO(contents))
 
-    feature_cols = [
-        "gender", "SeniorCitizen", "Partner", "Dependents",
-        "tenure", "PhoneService", "MultipleLines",
-        "OnlineSecurity", "OnlineBackup", "DeviceProtection",
-        "TechSupport", "StreamingTV", "StreamingMovies",
-        "PaperlessBilling", "MonthlyCharges", "TotalCharges",
-        "InternetService_DSL", "InternetService_Fiber optic",
-        "InternetService_No", "Contract_Month-to-month",
-        "Contract_One year", "Contract_Two year",
-        "PaymentMethod_Bank transfer (automatic)", "PaymentMethod_Credit card (automatic)",
-        "PaymentMethod_Electronic check", "PaymentMethod_Mailed check"
+    df.replace('No internet service', 'No', inplace=True)
+    df.replace('No phone service', 'No', inplace=True)
+
+    # Yes/No -> 1/0
+    yes_no_cols = [
+        "Partner", "Dependents", "PhoneService", "MultipleLines",
+        "OnlineSecurity", "OnlineBackup", "DeviceProtection", "TechSupport",
+        "StreamingTV", "StreamingMovies", "PaperlessBilling"
     ]
+    for col in yes_no_cols:
+        df[col] = df[col].map(lambda x: 1 if str(
+            x).strip().lower() == "yes" else 0).astype("int64")
 
-    X = df[feature_cols].copy()
+    # Gender: Male=0, Female=1
+    df["gender"] = df["gender"].map(lambda x: 0 if str(
+        x).strip().lower() == "male" else 1).astype("int64")
 
+    df["tenure"] = pd.to_numeric(
+        df["tenure"], errors="coerce").astype("float64")
+    df["MonthlyCharges"] = pd.to_numeric(
+        df["MonthlyCharges"], errors="coerce").astype("float64")
+    df["TotalCharges"] = pd.to_numeric(
+        df["TotalCharges"], errors="coerce").astype("float64")
+
+    result_df = df.copy()
+
+    df = df.drop(columns=['UserName', 'Email'], errors='ignore')
+
+    df1 = pd.get_dummies(data=df, columns=[
+                         'InternetService', 'Contract', 'PaymentMethod'], dtype='int64')
+
+    # Scale
+    X = df1.copy()
     X["tenure"] = (X["tenure"] - TENURE_MIN) / (TENURE_MAX - TENURE_MIN)
     X["MonthlyCharges"] = (X["MonthlyCharges"] -
                            MONTHLY_MIN) / (MONTHLY_MAX - MONTHLY_MIN)
     X["TotalCharges"] = (X["TotalCharges"] - TOTAL_MIN) / \
         (TOTAL_MAX - TOTAL_MIN)
 
-    # Dự đoán xác suất churn
-    probs = model.predict(X)
-    probs = probs.flatten() if isinstance(probs, np.ndarray) else probs
+    # Predict
+    probs = model.predict(X[[
+        "gender", "SeniorCitizen", "Partner", "Dependents", "tenure", "PhoneService",
+        "MultipleLines", "OnlineSecurity", "OnlineBackup", "DeviceProtection",
+        "TechSupport", "StreamingTV", "StreamingMovies", "PaperlessBilling",
+        "MonthlyCharges", "TotalCharges",
+        "InternetService_DSL", "InternetService_Fiber optic", "InternetService_No",
+        "Contract_Month-to-month", "Contract_One year", "Contract_Two year",
+        "PaymentMethod_Bank transfer (automatic)", "PaymentMethod_Credit card (automatic)",
+        "PaymentMethod_Electronic check", "PaymentMethod_Mailed check"
+    ]])
 
+    probs = probs.flatten() if isinstance(probs, np.ndarray) else probs
     churn_flags = [bool(p > 0.5) for p in probs]
 
-    result_df = df.copy()
     result_df["id"] = range(1, len(df) + 1)
     result_df["churn"] = churn_flags
-    result_df["churn_probability"] = probs
+    result_df["churnProbability"] = probs
 
-    output_cols = ["id"] + feature_cols + ["churn", "churn_probability"]
-    output = result_df[output_cols].to_dict(orient="records")
+    def to_camel(col: str) -> str:
+        # Ví dụ: 'UserName' -> 'userName', 'PhoneService' -> 'phoneService'
+        return col[0].lower() + col[1:] if col else col
 
-    return output
+    result_df.columns = [to_camel(c) for c in result_df.columns]
+
+    return result_df.to_dict(orient="records")
 
 
 class CustomerInput(BaseModel):
@@ -159,7 +188,7 @@ async def single_customer(customer: CustomerInput):
     result = {
         "id": 1,
         "churn": pred_label,
-        "churn_probability": round(float(pred_prob), 4)
+        "churnProbability": round(float(pred_prob), 4)
     }
 
     return result
