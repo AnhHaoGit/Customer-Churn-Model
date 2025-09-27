@@ -111,6 +111,8 @@ export default function CustomerForm() {
           },
         ],
       });
+      toast.success("The model has completed the analysis successfully!");
+
       router.push(`/result/${responseData.uploadId}`);
     } catch (error) {
       console.error("Error submitting form:", error);

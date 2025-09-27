@@ -47,6 +47,7 @@ const Main = () => {
         throw new Error("Upload failed");
       }
       const data = await res.json();
+      toast.success("The model has completed the analysis successfully!");
 
       const insertedRes = await fetch("/api/save", {
         method: "POST",
@@ -64,7 +65,7 @@ const Main = () => {
         userId: insertedData.userId,
         data: insertedData.data,
       });
-
+      toast.success("Save data to database successfully!");
       router.push(`/result/${insertedData._id}`);
     } catch (err) {
       console.error("Error uploading CSV:", err);
