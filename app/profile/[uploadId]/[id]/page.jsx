@@ -5,6 +5,7 @@ import Image from "next/image";
 import img from "@/assets/avatar.webp";
 import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
+import { Spinner } from "@/components/ui/shadcn-io/spinner";
 
 function camelToTitle(str) {
   if (!str) return "";
@@ -18,14 +19,16 @@ const ProfilePage = () => {
   const { uploadId, id } = useParams();
   const [selectedServices, setSelectedServices] = useState([]);
 
+  const [analysis, setAnalysis] = useState("");
+  const [loadingAnalysis, setLoadingAnalysis] = useState(false);
+
   useEffect(() => {
     const raw = localStorage.getItem("data");
     if (!raw) return;
 
     const arr = JSON.parse(raw);
     const upload = arr.find((item) => String(item._id) === String(uploadId));
-
-    const found = upload.data.find((item) => String(item.id) === String(id));
+    const found = upload?.data.find((item) => String(item.id) === String(id));
 
     setResult(found || null);
 
@@ -37,73 +40,138 @@ const ProfilePage = () => {
     }
   }, [uploadId, id]);
 
-  console.log(result)
+  const handleAnalyze = async () => {
+    if (!result) return;
+    setLoadingAnalysis(true);
+    setAnalysis("");
+    try {
+      const res = await fetch("/api/analyze_churn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(result),
+      });
+      const data = await res.json();
+      if (data.analysis) {
+        setAnalysis(data.analysis);
+      } else {
+        setAnalysis("Không nhận được kết quả phân tích.");
+      }
+    } catch (err) {
+      console.error(err);
+      setAnalysis("Có lỗi xảy ra khi phân tích.");
+    } finally {
+      setLoadingAnalysis(false);
+    }
+  };
 
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center py-12 px-4">
-        <h1 className="text-4xl font-bold text-gray-800 mb-8">
+      <main className="max-h-screen from-indigo-50 via-white to-purple-50 flex flex-col items-center py-12 px-4 pt-50">
+        <h1 className="text-4xl md:text-5xl font-extrabold text-gray-800 mb-12 drop-shadow-sm">
           Customer Profile
         </h1>
 
-        <div className="w-full max-w-5xl bg-white shadow-xl rounded-3xl p-8 flex flex-col md:flex-row gap-8">
-          {/* Avatar */}
-          <div className="flex-shrink-0 flex justify-center md:justify-start">
-            <Image
-              src={img}
-              alt="avatar"
-              className="w-48 h-48 rounded-full object-cover border-4 border-gray-200"
-            />
-          </div>
-
-          {/* Info */}
-          {result ? (
-            <div className="flex-1 flex flex-col md:flex-row gap-10">
-              {/* Left column: Basic info */}
-              <div className="flex-1 space-y-2">
-                <p className="text-2xl font-semibold text-gray-900">
-                  {result.userName}
-                </p>
-                <p className="text-gray-700">Email: {result.email}</p>
-                <p className="text-gray-700">Gender: {result.gender}</p>
-                <p className="text-gray-700">Tenure: {result.tenure} months</p>
-                <p className="text-gray-700">
-                  Monthly charges: {result.monthlyCharges}$
-                </p>
-                <p className="text-gray-700">
-                  Total charges: {result.totalCharges}$
-                </p>
-                <p className="text-gray-700">
-                  Contract: {camelToTitle(result.contract)}
-                </p>
-                <p className="text-gray-700">
-                  Internet: {camelToTitle(result.internetService)}
-                </p>
-                <p className="text-gray-700">
-                  Payment: {camelToTitle(result.paymentMethod)}
-                </p>
+        <div className="w-full max-w-6xl bg-white/90 backdrop-blur-md shadow-2xl rounded-3xl border border-gray-100 p-8 md:p-12 flex flex-col gap-10">
+          <div className="flex">
+            <div className="flex flex-col items-center md:items-start md:w-1/3">
+              <div className="relative">
+                <Image
+                  src={img}
+                  alt="avatar"
+                  className="w-48 h-48 rounded-full object-cover border-4 border-indigo-200 shadow-md"
+                />
+                <div className="absolute bottom-2 right-2 bg-iris text-white px-3 py-1 text-sm rounded-full shadow">
+                  {result?.churn ? "At Risk" : "Active"}
+                </div>
               </div>
-
-              {/* Right column: Services */}
-              <div className="flex-1">
-                <h2 className="text-xl font-semibold mb-3 text-gray-800">
-                  Services
-                </h2>
-                {selectedServices.length > 0 ? (
-                  <ul className="list-disc list-inside space-y-1 text-gray-700">
-                    {selectedServices.map((ser, idx) => (
-                      <li key={idx}>{camelToTitle(ser)}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-gray-500">No services</p>
-                )}
-              </div>
+              {result && (
+                <p className="mt-5 text-center md:text-left text-lg text-gray-600">
+                  ID: <span className="font-medium">{result.id}</span>
+                </p>
+              )}
             </div>
-          ) : (
-            <div className="flex-1 flex items-center justify-center">
-              <p className="text-gray-500 text-lg">Loading...</p>
+
+            {result ? (
+              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-3">
+                  <InfoItem label="Name" value={result.userName} />
+                  <InfoItem label="Email" value={result.email} />
+                  <InfoItem label="Gender" value={result.gender} />
+                  <InfoItem label="Tenure" value={`${result.tenure} months`} />
+                  <InfoItem
+                    label="Monthly Charges"
+                    value={`$${result.monthlyCharges}`}
+                  />
+                  <InfoItem
+                    label="Total Charges"
+                    value={`$${result.totalCharges}`}
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <InfoItem
+                    label="Contract"
+                    value={camelToTitle(result.contract)}
+                  />
+                  <InfoItem
+                    label="Internet Service"
+                    value={camelToTitle(result.internetService)}
+                  />
+                  <InfoItem
+                    label="Payment Method"
+                    value={camelToTitle(result.paymentMethod)}
+                  />
+
+                  <h2 className="text-xl font-semibold mt-6 text-gray-800">
+                    Services
+                  </h2>
+                  {selectedServices.length > 0 ? (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {selectedServices.map((ser, idx) => (
+                        <span
+                          key={idx}
+                          className="bg-indigo-100 text-indigo-800 text-sm px-3 py-1 rounded-full font-medium shadow-sm"
+                        >
+                          {camelToTitle(ser)}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 mt-2">No additional services</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex items-center justify-center">
+                <p className="text-gray-500 text-lg animate-pulse">
+                  Loading...
+                </p>
+              </div>
+            )}
+          </div>
+          {result && (
+            <button
+              onClick={handleAnalyze}
+              className="mt-6 px-6 py-2 bg-iris hover:bg-violet text-white rounded-full shadow transition disabled:opacity-60 flex items-center justify-center"
+              disabled={loadingAnalysis}
+            >
+              {loadingAnalysis ? (
+                <div className="flex gap-2">
+                  <p>Analyzing</p>
+                  <Spinner key="ellipsis" variant="ellipsis" />
+                </div>
+              ) : (
+                <p>Analyze Churn Reasons</p>
+              )}
+            </button>
+          )}
+          {analysis && (
+            <div className="mt-8 p-4 bg-indigo-50 rounded-xl border border-indigo-100 shadow-inner">
+              <h3 className="font-semibold text-indigo-800 mb-2">
+                Analysis Result
+              </h3>
+              <p className="text-gray-700 whitespace-pre-wrap">{analysis}</p>
             </div>
           )}
         </div>
@@ -111,5 +179,14 @@ const ProfilePage = () => {
     </>
   );
 };
+
+function InfoItem({ label, value }) {
+  return (
+    <p className="text-gray-700">
+      <span className="font-semibold text-gray-900">{label}:</span>{" "}
+      <span>{value}</span>
+    </p>
+  );
+}
 
 export default ProfilePage;

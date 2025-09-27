@@ -30,6 +30,7 @@ export async function POST(req) {
 
     data["churn"] = result["churn"];
     data["churnProbability"] = result["churnProbability"];
+    data['id'] = result['id']
 
     const db = await connectDB();
 

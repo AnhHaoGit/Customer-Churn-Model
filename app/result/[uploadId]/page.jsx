@@ -92,8 +92,8 @@ const Page = () => {
                   {sortOrder === "default"
                     ? "⭯"
                     : sortOrder === "asc"
-                    ? "↑"
-                    : "↓"}
+                      ? "↑"
+                      : "↓"}
                 </button>
               </p>
               <p>Action</p>
@@ -103,13 +103,12 @@ const Page = () => {
           <div className="max-h-[550px] overflow-y-auto">
             {results && results.length > 0 ? (
               results.map((item, index) => (
-                <div
+                <Link
                   key={index}
-                  className="grid grid-cols-[1fr_2.5fr_1fr_1fr_1.5fr_1fr] gap-4 border-b py-4 items-center hover:bg-gray-200"
+                  href={`/profile/${uploadId}/${item.id}`}
+                  className="grid grid-cols-[1fr_2.5fr_1fr_1fr_1.5fr_1fr] gap-4 border-b py-4 items-center hover:bg-gray-200 cursor-pointer"
                 >
-                  <Link href={`/profile/${uploadId}/${item.id}`}>
-                    <p>{item.userName}</p>
-                  </Link>
+                  <p>{item.userName}</p>
                   <p>{item.email}</p>
                   <p>{item.id}</p>
                   {item.churn ? (
@@ -127,18 +126,19 @@ const Page = () => {
                     {(item.churnProbability * 100).toFixed(2)}%
                   </p>
                   <button
-                    onClick={() =>
+                    onClick={(e) => {
+                      e.preventDefault(); // để bấm nút ko trigger link
                       sendEmail(
                         item.email,
                         item.userName,
                         item.churnProbability
-                      )
-                    }
+                      );
+                    }}
                     className="flex items-center justify-center gap-1 bg-indigo-700 text-white px-3 py-2 text-sm rounded hover:bg-indigo-800 transition"
                   >
                     Send email
                   </button>
-                </div>
+                </Link>
               ))
             ) : (
               <p>No results available. Please upload a CSV file first.</p>
