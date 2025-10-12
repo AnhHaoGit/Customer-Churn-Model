@@ -47,17 +47,39 @@ const Page = () => {
     setResults(sorted);
   };
 
-  const sendEmail = async (email, userName, churnProbability) => {
+  const sendEmail = async (email, userName, churnProbability, uploadId) => {
     try {
       const res = await fetch("/api/send_email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, userName, churnProbability }),
+        body: JSON.stringify({ email, userName, churnProbability, uploadId }),
       });
 
       const result = await res.json();
       if (res.ok) {
         toast.success(`Email sent to ${email}`);
+
+        // ✅ Cập nhật lại state để phản ánh sentEmail: true
+        setResults((prev) =>
+          prev.map((item) =>
+            item.email === email ? { ...item, sentEmail: true } : item
+          )
+        );
+
+        // ✅ Đồng thời cập nhật lại localStorage (để không mất khi refresh)
+        const storedData = JSON.parse(localStorage.getItem("data") || "[]");
+        const updatedData = storedData.map((upload) => {
+          if (String(upload._id) === String(uploadId)) {
+            return {
+              ...upload,
+              data: upload.data.map((i) =>
+                i.email === email ? { ...i, sentEmail: true } : i
+              ),
+            };
+          }
+          return upload;
+        });
+        localStorage.setItem("data", JSON.stringify(updatedData));
       } else {
         toast.error(`Error: ${result.error}`);
       }
@@ -127,16 +149,24 @@ const Page = () => {
                   </p>
                   <button
                     onClick={(e) => {
-                      e.preventDefault(); // để bấm nút ko trigger link
+                      e.preventDefault();
+                      if (item.sentEmail) return; // đã gửi thì không gửi lại
                       sendEmail(
                         item.email,
                         item.userName,
-                        item.churnProbability
+                        item.churnProbability,
+                        uploadId
                       );
                     }}
-                    className="flex items-center justify-center gap-1 bg-indigo-700 text-white px-3 py-2 text-sm rounded hover:bg-indigo-800 transition"
+                    disabled={item.sentEmail}
+                    className={`flex items-center justify-center gap-1 px-3 py-2 text-sm rounded transition
+                      ${
+                        item.sentEmail
+                          ? "bg-gray-400 text-white cursor-not-allowed"
+                          : "bg-indigo-700 text-white hover:bg-indigo-800"
+                      }`}
                   >
-                    Send email
+                    {item.sentEmail ? "Email Sent" : "Send Email"}
                   </button>
                 </Link>
               ))

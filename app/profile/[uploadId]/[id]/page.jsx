@@ -6,6 +6,8 @@ import img from "@/assets/avatar.webp";
 import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Spinner } from "@/components/ui/shadcn-io/spinner";
+import ReactMarkdown from "react-markdown";
+
 
 function camelToTitle(str) {
   if (!str) return "";
@@ -63,6 +65,8 @@ const ProfilePage = () => {
       setLoadingAnalysis(false);
     }
   };
+
+  console.log(analysis)
 
   return (
     <>
@@ -171,7 +175,7 @@ const ProfilePage = () => {
               <h3 className="font-semibold text-indigo-800 mb-2">
                 Analysis Result
               </h3>
-              <p className="text-gray-700 whitespace-pre-wrap">{analysis}</p>
+              <FormattedAnalysis text={analysis} />
             </div>
           )}
         </div>
@@ -188,5 +192,74 @@ function InfoItem({ label, value }) {
     </p>
   );
 }
+
+function FormattedAnalysis({ text }) {
+  if (!text) return null;
+
+  // 1️⃣ Tách thành các dòng để xử lý từng dòng markdown
+  const lines = text.split("\n");
+
+  return (
+    <div className="text-gray-700 leading-relaxed space-y-2">
+      {lines.map((line, index) => {
+        const trimmed = line.trim();
+
+        // 2️⃣ Headings
+        if (trimmed.startsWith("###")) {
+          return (
+            <h3 key={index} className="text-lg font-bold text-indigo-800 mt-4">
+              {trimmed.replace(/^###\s*/, "")}
+            </h3>
+          );
+        }
+
+        // 3️⃣ Bullet list
+        if (trimmed.startsWith("- ")) {
+          return (
+            <li key={index} className="ml-6 list-disc">
+              {formatBold(trimmed.replace(/^- /, ""))}
+            </li>
+          );
+        }
+
+        // 4️⃣ Numbered list
+        if (/^\d+\./.test(trimmed)) {
+          return (
+            <li key={index} className="ml-6 list-decimal">
+              {formatBold(trimmed.replace(/^\d+\.\s*/, ""))}
+            </li>
+          );
+        }
+
+        // 5️⃣ Đoạn văn thông thường
+        if (trimmed === "") {
+          return <div key={index} className="h-3" />; // khoảng cách
+        }
+
+        return (
+          <p key={index} className="text-gray-700">
+            {formatBold(trimmed)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+// Hàm con xử lý **bold**
+function formatBold(text) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={i} className="font-semibold text-gray-900">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    return part;
+  });
+}
+
 
 export default ProfilePage;
