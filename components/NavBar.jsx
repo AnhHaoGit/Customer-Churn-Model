@@ -4,14 +4,17 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 const Navbar = () => {
   const { data: session } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
+  const router = useRouter();
 
   const handleSignout = () => {
     localStorage.removeItem("user");
     signOut();
+    router.push("/login");
   };
 
   return (

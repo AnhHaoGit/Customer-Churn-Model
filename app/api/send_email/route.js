@@ -42,9 +42,6 @@ export async function POST(req) {
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; background-color: #f8f9fa; padding: 24px; border-radius: 12px; color: #333;">
         <h2 style="color: #0070f3;">Hi ${userName},</h2>
-        <p>We’ve noticed that your engagement with our service might be decreasing. 
-        Our system predicts that your churn probability is 
-        <strong style="color: #d9534f;">${(churnProbability * 100).toFixed(2)}%</strong>.</p>
 
         <p>We truly value having you as part of our community and we’d love the chance to keep working with you. 
         As a token of appreciation, we’re offering you a <strong>special discount voucher</strong> to help you stay with us:</p>
@@ -63,7 +60,7 @@ export async function POST(req) {
         <hr style="margin: 24px 0; border: none; border-top: 1px solid #ddd;">
         <p style="font-size: 14px; color: #888;">Warm regards,<br>
         <strong>Customer Success Team</strong><br>
-        MagicSub Analytics</p>
+        Telco Company Analytics</p>
       </div>
     `;
 
@@ -71,7 +68,7 @@ export async function POST(req) {
     const data = await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL, // e.g. "MagicSub Team <noreply@magicsub.com>"
       to: email,
-      subject: "🎁 A Special Offer Just for You from MagicSub",
+      subject: "🎁 A Special Offer Just for You from Telco Company",
       html: emailHtml,
     });
 
